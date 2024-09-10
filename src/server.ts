@@ -4,9 +4,9 @@ import cors from 'cors';
 import fileUpload from 'express-fileupload';
 
 // IMPORTS
-import { router } from './routes/routes';
-import connectDB from './database/connectDB';
-import Config from './config';
+import { router } from './routes/routes.js'; // The extension is being added to automatically add .js extension to js files during compilation.
+import connectDB from './database/connectDB.js';
+import Config from './config.js';
 
 const app = express();
 

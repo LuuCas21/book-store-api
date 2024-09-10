@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../config.env' )});
+dotenv.config({ path: path.resolve(import.meta.dirname, '../config.env' )});
 
 interface ENV {
     DATABASE_URL: string | undefined;
@@ -18,7 +18,7 @@ interface Config {
 const getConfig = (): ENV => {
     return {
         DATABASE_URL: process.env.DATABASE_URL,
-        DATABASE_PASSWORD: process.env.DATABASE_PASSWORD,
+        DATABASE_PASSWORD: process.env.DATABASE_PASSWORD, 
         PORT: process.env.PORT,
     }
 };

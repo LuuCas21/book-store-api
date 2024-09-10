@@ -1,8 +1,8 @@
 import path from 'path';
-import { Request, Response, RequestHandler } from 'express';
+import { RequestHandler } from 'express';
 
 // IMPORTS
-import BookStoreModel from '../models/models';
+import BookStoreModel from '../models/models.js';
 
 // TYPES
 type CredentialsRequestBody = {
@@ -82,8 +82,10 @@ export const uploadBook: RequestHandler<any, any, CredentialsRequestBody, any> =
         const imgElement = (req.files as { image: object }).image;
         let imgName: string | unknown;
 
+        console.log(import.meta.dirname);
+
         if ("name" in imgElement && "mv" in imgElement) {
-           const imgPath = path.join('C:/Users/Lucas/Desktop/book-store/tmp/' + `${imgElement.name}`);
+           const imgPath = path.join(import.meta.dirname + `${imgElement.name}`);
            (imgElement as { mv: Function }).mv(imgPath);
            imgName = imgElement.name;
         }
@@ -112,3 +114,19 @@ export const deleteBook: RequestHandler<CredentialsParam, any, any, any> = async
         res.status(204).json({ msg: 'Failed to delete item' });
     }
 };
+
+// Fileupload test
+export const uploadCover: RequestHandler = (req, res) => {
+    const imgElement = (req.files as { image: object }).image;
+        let imgName: string | unknown;
+        // 'C:/Users/Lucas/Desktop/book-store/tmp/'
+        console.log(import.meta.dirname);
+
+        if ("name" in imgElement && "mv" in imgElement) {
+           const imgPath = path.join(`${import.meta.dirname}/../../tmp/` + `${imgElement.name}`);
+           (imgElement as { mv: Function }).mv(imgPath);
+           imgName = imgElement.name;
+        }
+
+        res.status(201).json({ msg: 'uploaded' });
+}
