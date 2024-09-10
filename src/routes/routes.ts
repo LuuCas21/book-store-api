@@ -13,4 +13,4 @@ router.post('/upload', validateData(BookStoreSchema), uploadBook);
 
 router.put('/edit/:id', updateBook);
 
-router.delete('/delete/:id', deleteBook); 
+router.delete('/delete/:id', deleteBook);  

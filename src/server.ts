@@ -1,6 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import fileUpload from 'express-fileupload';
 
 // IMPORTS
 import { router } from './routes/routes';
@@ -12,6 +13,7 @@ const app = express();
 // MIDDLEWARES
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(fileUpload({ useTempFiles: true, tempFileDir: './tmp/' }));
 app.use(helmet());
 app.use(cors());
 
