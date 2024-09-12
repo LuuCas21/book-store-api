@@ -1,7 +1,7 @@
-import mongoose from "mongoose";
+import { connect } from "mongoose";
 
 const connectDB = async (db: string) => {
-    await mongoose.connect(db);
+    await connect(db);
     console.log('connected to database');
 };
 

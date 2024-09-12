@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import fileUpload from 'express-fileupload';
+import CookieParser from 'cookie-parser';
 
 // IMPORTS
 import { router } from './routes/routes.js'; // The extension is being added to automatically add .js extension to js files during compilation.
@@ -16,6 +17,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(fileUpload({ useTempFiles: true, tempFileDir: './tmp/' }));
 app.use(helmet());
 app.use(cors());
+app.use(CookieParser());
 
 // ERROR HANDLING MIDDLEWARE
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
