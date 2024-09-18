@@ -1,4 +1,3 @@
-import path from 'path';
 import bcrypt from 'bcrypt';
 import { RequestHandler } from 'express';
 import fs from 'fs';
@@ -89,6 +88,12 @@ export const getAllBooks: RequestHandler<any, any, any, CredentialsQuery> = asyn
         res.status(204).json({ msg: 'Fail' });
     }
 };
+
+// GET USER PERFIL
+export const getUserPerfil: RequestHandler = async (req, res) => {
+    const data = await BookStoreModel.findById(req.userInfo.user_id);
+    res.status(200).json({ data });
+}
 
 // CREATE USER SYSTEM 
 export const createUser: RequestHandler<any, any, CredentialsRequestBody, any> = async (req, res) => {
@@ -186,7 +191,8 @@ export const loginUser: RequestHandler<any, any, UserCredentialsLogin, any> = as
             httpOnly: true
         });
         
-        res.status(200).json({ success: true, msg: 'Successfully logged in' });
+        //res.status(200).redirect('/books');
+        res.status(200).json({ msg: 'successfully logged in' });
 
     } catch(err) {
         res.status(400).json({ success: false, msg: 'Failed to log in' });
@@ -196,13 +202,17 @@ export const loginUser: RequestHandler<any, any, UserCredentialsLogin, any> = as
 // LOG OUT SYSTEM
 export const logOutUser: RequestHandler = (req, res) => {
     res.clearCookie('access-token');
-    res.status(200).json({ msg: "user logged out" });
+    //res.status(200).json({ msg: "user logged out" });
+    res.status(200).redirect('/books/user/login');
 }
 
 // USER ITEMS
 export const myItems: RequestHandler = async (req, res) => {
     const user = await BookStoreModel.findById(req.userInfo.user_id);
-    res.status(200).json({ msg: "logged in", user });
+    console.log(user);
+    //res.status(200).json({ msg: "logged in", books: user?.books });
+    console.log(import.meta.dirname);
+    res.status(200).json({ msg: "logged in", books: user?.books });
 }
 
 // BOOK COVER UPLOAD

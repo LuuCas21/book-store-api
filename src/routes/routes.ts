@@ -2,18 +2,22 @@ import express from 'express';
 import { body } from 'express-validator';
 
 // IMPORTS
-import { getAllBooks, createUser, updateBook, deleteBook, uploadCover, loginUser, myItems, updatePassword, logOutUser, addBooks } from '../controllers/controllers.js';
+import { getAllBooks, getUserPerfil, createUser, updateBook, deleteBook, uploadCover, loginUser, myItems, updatePassword, logOutUser, addBooks } from '../controllers/controllers.js';
 import { validateInput } from '../input-validation.js';
-import { validateToken } from '../token.js';
+//import { validateToken } from '../token.js';
 import { upload } from '../multer-config.js';
+import { validateToken, isUserAuthorized } from '../token.js';
 
 export const router = express.Router();
 
 // RETRIEVE ALL BOOKS
 router.get('/', getAllBooks);
 
+// USER PERFIL
+router.get('/user/perfil', validateToken, getUserPerfil);
+
 // RETRIEVE USER ADDED BOOKS
-router.get('/items', validateToken, myItems);
+router.get('/items', validateToken, isUserAuthorized('seller'), myItems);
 
 // LOG OUT USER
 router.get('/user/logout', logOutUser);
