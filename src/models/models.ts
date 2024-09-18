@@ -19,7 +19,7 @@ const BookStoreSchema = new mongoose.Schema({
         default: 'Unknown'
     },
     image: {
-        type: String,
+        type: Buffer,
         required: true,
         unique: false
     },
@@ -42,10 +42,16 @@ const UserAccountSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    user_password: {
+    user_email: {
         type: String,
         required: true,
         unique: true
+    },
+    user_password: {
+        type: String,
+        required: true,
+        unique: true,
+        minLength: [8, 'Password must contain at least 8 characters']
     },
     user_role: {
         type: String,

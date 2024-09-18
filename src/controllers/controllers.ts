@@ -1,6 +1,8 @@
 import path from 'path';
 import bcrypt from 'bcrypt';
 import { RequestHandler } from 'express';
+import fs from 'fs';
+import { promisify } from 'util';
 
 // IMPORTS
 import BookStoreModel from '../models/models.js';
@@ -10,8 +12,15 @@ import { createToken } from '../token.js';
 type CredentialsRequestBody = {
     user_name: string;
     user_password: string;
+    user_email: string;
     user_role: string;
-    books: [book_name: string, price: string, author: string, image: string, description: string, genre: string];
+    books: { book_name: string, price: string, author: string, image: string, description: string, genre: string };
+    book_name: string;
+    price: string;
+    author: string;
+    image: string;
+    description: string;
+    genre: string;
 };
 
 type UserCredentialsLogin = {
@@ -20,6 +29,7 @@ type UserCredentialsLogin = {
 };
 
 type CredentialsParam = {
+    doc: string;
     id: string;
 };
 
@@ -80,28 +90,51 @@ export const getAllBooks: RequestHandler<any, any, any, CredentialsQuery> = asyn
     }
 };
 
-// CREATE USER SYSTEM
+// CREATE USER SYSTEM 
 export const createUser: RequestHandler<any, any, CredentialsRequestBody, any> = async (req, res) => {
     try {
-        const { user_name, user_password, user_role, books } = req.body;
+        const { user_name, user_password, user_role, user_email, books } = req.body;
 
-        const hash = bcrypt.hashSync(user_password, 10);
-        await BookStoreModel.create({ user_name, user_password: hash, user_role });
+        console.log(req.body);
+
+        const hash = bcrypt.hashSync(user_password, 10);  
+        await BookStoreModel.create({ user_name, user_password: hash, user_email, user_role });
 
         res.status(201).json({ success: true, msg: 'user created' });
     } catch(err) {
+        console.log(err);
         res.status(204).json({ msg: err });
     }
 };
 
 export const addBooks: RequestHandler<CredentialsParam, any, CredentialsRequestBody, any> = async (req, res) => {
-    await BookStoreModel.findByIdAndUpdate(req.params.id, { $addToSet: { books: req.body.books } });
-    res.status(201).json({ msg: 'Book added' });
+    const { book_name, price, author, description, genre, image } = req.body;
+    try {
+        if (!req.file?.originalname) return;
+
+        // CONVERTING IMAGE TO BASE64 BUFFER
+        const img = fs.readFileSync(`${import.meta.dirname}/../../tmp/${req.file.originalname}`, "base64");
+        const buffer = Buffer.from(img, "base64");
+
+        // DECODING BASE64 TO IMAGE AND STORING IN IMG FOLDER
+        fs.writeFileSync(`${import.meta.dirname}/../../img/${req.file.originalname}`, buffer); // THATS FOR TESTING
+
+        console.log(buffer);
+
+        // DELETING IMAGE STORED IN UPLOAD FOLDER BY MULTER
+        fs.unlinkSync(req.file.path);
+
+        // await BookStoreModel.findByIdAndUpdate(req.params.id, { $addToSet: { books: req.body.books } }, { runValidators: true });
+        await BookStoreModel.findByIdAndUpdate(req.params.id, { $addToSet: { books: { book_name, price, author, image: buffer, genre, description } } }, { runValidators: true });
+        res.status(201).json({ msg: 'Book added' });
+    } catch(err) {
+        res.status(400).json({ msg: err });
+    }
 }
 
 export const updateBook:RequestHandler<CredentialsParam, any, CredentialsRequestBody, any> = async (req, res) => {
     try {
-        await BookStoreModel.findByIdAndUpdate({ _id: req.params.id }, req.body);
+        await BookStoreModel.findByIdAndUpdate({ _id: req.params.id }, req.body, { runValidators: true });
         res.status(201).json({ msg: 'Book edited' });
     } catch(err) {
         res.status(204).json({ msg: 'Failed to update item' });
@@ -110,7 +143,7 @@ export const updateBook:RequestHandler<CredentialsParam, any, CredentialsRequest
 
 export const deleteBook: RequestHandler<CredentialsParam, any, any, any> = async (req, res) => {
     try {
-        await BookStoreModel.findByIdAndDelete(req.params.id);
+        await BookStoreModel.findByIdAndUpdate({ _id: req.params.doc }, { $pull: { books: { _id: req.params.id }}});
         res.status(200).json({ msg: 'Book deleted' });
     } catch(err) {
         res.status(204).json({ msg: 'Failed to delete item' });
@@ -118,15 +151,20 @@ export const deleteBook: RequestHandler<CredentialsParam, any, any, any> = async
 };
 
 // UPDATE PASSWORD
-export const updatePassword: RequestHandler<CredentialsParam, any, UserCredentialsLogin, any> = async (req, res) => {
-    const { id } = req.params;
-    const { user_password } = req.body;
+export const updatePassword: RequestHandler<CredentialsParam, any, UserCredentialsLogin, any> = async (req, res) => { 
+    try {
+        const { id } = req.params;
+        const { user_password } = req.body;
 
-    const editedPass = bcrypt.hashSync(user_password, 10);
+        const editedPass = bcrypt.hashSync(user_password, 10);
 
-    await BookStoreModel.findByIdAndUpdate(id, { user_password: editedPass });
+        await BookStoreModel.findByIdAndUpdate(id, { user_password: editedPass }, { runValidators: true });
 
-    res.status(201).json({ msg: 'password edited' });
+        res.status(201).json({ msg: 'password edited' });
+
+    } catch(err) {
+        res.status(400).json({ msg: err });
+    }
 }
 
 // LOGIN SYSTEM
@@ -163,53 +201,30 @@ export const logOutUser: RequestHandler = (req, res) => {
 
 // USER ITEMS
 export const myItems: RequestHandler = async (req, res) => {
-    //const token = req.cookies['access-token'];
     const user = await BookStoreModel.findById(req.userInfo.user_id);
     res.status(200).json({ msg: "logged in", user });
 }
 
-// Fileupload test
-export const uploadCover: RequestHandler = (req, res) => {
-    const imgElement = (req.files as { image: object }).image;
-        let imgName: string | unknown;
-        console.log(import.meta.dirname);
+// BOOK COVER UPLOAD
+export const uploadCover: RequestHandler = async (req, res) => {
+    const unlinkAsync = promisify(fs.unlink);
+    try {
+        if (!req.file?.originalname) return;
 
-        if ("name" in imgElement && "mv" in imgElement) {
-           const imgPath = path.join(`${import.meta.dirname}/../../tmp/` + `${imgElement.name}`);
-           (imgElement as { mv: Function }).mv(imgPath);
-           imgName = imgElement.name;
-        }
+        // CONVERTING IMAGE TO BASE64 BUFFER
+        const img = fs.readFileSync(`${import.meta.dirname}/../../tmp/${req.file.originalname}`, "base64");
+        const buffer = Buffer.from(img, "base64");
+
+        // DECODING BASE64 TO IMAGE AND STORING IN IMG FOLDER
+        fs.writeFileSync(`${import.meta.dirname}/../../img/${req.file.originalname}`, buffer);
+
+        await BookStoreModel.findByIdAndUpdate({ _id: req.params.id }, { $addToSet: {} })
+
+        // DELETING IMAGE STORED IN UPLOAD FOLDER BY MULTER
+        // await unlinkAsync(req.file.path);
 
         res.status(201).json({ msg: 'uploaded' });
+    } catch(err) {
+
+    }
 }
-
-
-/* 
-export const uploadBook: RequestHandler<any, any, CredentialsRequestBody, any> = async (req, res) => {
-    try {
-        const { user_name, user_password, user_role, books } = req.body;
-
-           const hash = bcrypt.hashSync(user_password, 10);
-
-           if (user_name && !books) {
-               await BookStoreModel.create({ user_name, user_password: hash, user_role });
-           } else { 
-               await BookStoreModel.create({ user_name, user_password: hash, user_role, books });
-           }
-   
-           res.status(201).json({ success: true, msg: 'item created' });
-       } catch(err) {
-           res.status(204).json({ msg: err });
-       }
-   };
-*/
-
-
-/*const imgElement = (req.files as { image: object }).image;
-        let imgName: string | unknown;
-
-        if ("name" in imgElement && "mv" in imgElement) {
-           const imgPath = path.join(import.meta.dirname + `${imgElement.name}`);
-           (imgElement as { mv: Function }).mv(imgPath);
-           imgName = imgElement.name;
-        }*/

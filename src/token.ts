@@ -4,7 +4,6 @@ import pkg from 'jsonwebtoken';
 const { sign, verify } = pkg;
 
 import Config from './config.js';
-import { ObjectId } from 'mongoose';
 
 export const createToken = (username: string, user_role: string, user_id: string) => {
     const key = Config.JWT_SECRET;

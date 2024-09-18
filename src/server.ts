@@ -1,8 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import fileUpload from 'express-fileupload';
+//import fileUpload from 'express-fileupload';
 import CookieParser from 'cookie-parser';
+import methodOverride from 'method-override';
+import path from 'path';
 
 // IMPORTS
 import { router } from './routes/routes.js'; // The extension is being added to automatically add .js extension to js files during compilation.
@@ -13,11 +15,13 @@ const app = express();
 
 // MIDDLEWARES
 app.use(express.json());
+app.use(express.static(path.join(import.meta.dirname, '/public')));
 app.use(express.urlencoded({ extended: false }));
-app.use(fileUpload({ useTempFiles: true, tempFileDir: './tmp/' }));
+//app.use(fileUpload({ useTempFiles: true, tempFileDir: './tmp/' }));
 app.use(helmet());
 app.use(cors());
 app.use(CookieParser());
+app.use(methodOverride('_method'));
 
 // ERROR HANDLING MIDDLEWARE
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
